@@ -4,45 +4,10 @@ import { ArrowRight, FileText, Code, Cpu, Menu } from 'lucide-react'
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen">
-      <header className="w-full border-b">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-          <a className="flex items-center justify-center" href="#">
-            <span className="sr-only">AZVD Technology Services</span>
-            <Cpu className="h-6 w-6" />
-            <span className="ml-2 text-lg font-semibold">AZVD Technology Services</span>
-          </a>
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu className="h-6 w-6" />
-            <span className="sr-only">Toggle menu</span>
-          </Button>
-          <div className="hidden md:flex items-center space-x-4">
-            <nav className="flex space-x-4">
-              <a className="text-sm font-medium hover:text-primary" href="#services">
-                Services
-              </a>
-              <a className="text-sm font-medium hover:text-primary" href="#products">
-                Products
-              </a>
-              <a className="text-sm font-medium hover:text-primary" href="#contact">
-                Contact
-              </a>
-              <a className="text-sm font-medium hover:text-primary" href="ai-chat">
-                AI Chat
-              </a>
-            </nav>
-            <Button variant="ghost" asChild>
-              <a href="/login">Log in</a>
-            </Button>
-            <Button asChild>
-              <a href="/signup">Sign up</a>
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div>
       <main className="flex-1">
         <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-background">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="container mx-auto  px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col items-center space-y-4 text-center">
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
