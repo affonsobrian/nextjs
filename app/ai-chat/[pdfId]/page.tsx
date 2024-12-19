@@ -8,19 +8,29 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Send } from 'lucide-react'
 
+// Define interface for the PDF metadata
+interface PdfMetadata {
+  id: string | null;
+  filename: string;
+  stored_name: string;
+  status: string;
+  processed_data: string;
+}
+
 export default function ExplorePDFPage() {
   const { pdfId } = useParams()
-  const [pdfData, setPdfData] = useState<{ name: string, content: string } | null>(null)
+  const [pdfData, setPdfData] = useState<PdfMetadata | null>(null)
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
 
   useEffect(() => {
     const fetchPDFData = async () => {
       try {
-        const response = await fetch(`/api/pdfs/${pdfId}`)
+        const response = await fetch(`/api/upload?id=${pdfId}`)
         if (response.ok) {
           const data = await response.json()
-          setPdfData(data)
+          console.log(data[0])
+          setPdfData(data[0])
         }
       } catch (error) {
         console.error('Error fetching PDF data:', error)
@@ -60,7 +70,7 @@ export default function ExplorePDFPage() {
     <div className="container mx-auto p-4 flex flex-col h-[85vh]">
       <Card className="w-full max-w-4xl mx-auto flex-grow flex flex-col">
         <CardHeader>
-          <CardTitle>Explore PDF: {pdfData.name}</CardTitle>
+          <CardTitle>Explore PDF: {pdfData.filename}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow overflow-hidden">
           <ScrollArea className="h-[calc(85vh-20rem)]">
@@ -84,7 +94,8 @@ export default function ExplorePDFPage() {
                 </div>
               )}
               <h3 className="text-lg font-semibold mt-8">Document Content</h3>
-              <p className="whitespace-pre-wrap">{pdfData.content}</p>
+              {/* I want to add a view of the PDF here */}
+              <p className="whitespace-pre-wrap">{pdfData.processed_data}</p>
             </div>
           </ScrollArea>
         </CardContent>

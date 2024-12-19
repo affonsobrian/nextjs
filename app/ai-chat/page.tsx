@@ -10,8 +10,10 @@ import { Upload, FileText } from 'lucide-react'
 
 interface PDFFile {
   id: string;
-  name: string;
-  status: 'analyzed' | 'queued';
+  filename: string;
+  stored_name: string;
+  status: string;
+  processed_data: string;
 }
 
 export default function AIChatPage() {
@@ -19,22 +21,23 @@ export default function AIChatPage() {
   const [pdfFiles, setPdfFiles] = useState<PDFFile[]>([])
   const router = useRouter()
 
-  useEffect(() => {
-    // Fetch the list of PDF files from your API
-    const fetchPDFs = async () => {
-      try {
-        const response = await fetch('/api/upload')
-        if (response.ok) {
-          const data = await response.json()
-          setPdfFiles(data)
-        } else {
-          console.error('API call failed with status:', response.status);
-        }
-      } catch (error) {
-        console.error('Error fetching PDFs:', error)
+  // Function to fetch the list of PDF files
+  const fetchPDFs = async () => {
+    try {
+      const response = await fetch('/api/upload')
+      if (response.ok) {
+        const data = await response.json()
+        setPdfFiles(data)
+      } else {
+        console.error('API call failed with status:', response.status);
       }
+    } catch (error) {
+      console.error('Error fetching PDFs:', error)
     }
+  }
 
+  useEffect(() => {
+    // Fetch PDFs when the component mounts
     fetchPDFs()
   }, [])
 
@@ -58,7 +61,7 @@ export default function AIChatPage() {
 
       if (response.ok) {
         console.log('File uploaded successfully')
-        // Refresh the list of PDFs
+        // Refresh the list of PDFs by calling fetchPDFs
         fetchPDFs()
         setFile(null)
       } else {
@@ -70,7 +73,7 @@ export default function AIChatPage() {
   }
 
   const handleExplore = (pdfId: string) => {
-    router.push(`/ai-chat/explore/${pdfId}`)
+    router.push(`/ai-chat/${pdfId}`)
   }
 
   return (
@@ -86,7 +89,7 @@ export default function AIChatPage() {
                 <div key={pdf.id} className="flex items-center justify-between p-2 border rounded">
                   <div className="flex items-center space-x-2">
                     <FileText className="h-6 w-6" />
-                    <span>{pdf.name}</span>
+                    <span>{pdf.filename}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className={pdf.status === 'analyzed' ? 'text-green-500' : 'text-yellow-500'}>
