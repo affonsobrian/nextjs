@@ -10,10 +10,8 @@ import { Upload, FileText } from 'lucide-react'
 
 interface PDFFile {
   id: string;
-  filename: string;
-  stored_name: string;
+  name: string;
   status: 'analyzed' | 'queued';
-  processed_data: string;
 }
 
 export default function AIChatPage() {
@@ -47,14 +45,13 @@ export default function AIChatPage() {
   }
 
   const handleFileUpload = async () => {
-    console.log("OLHA AQUI PORRA")
     if (!file) return
 
     const formData = new FormData()
     formData.append('file', file)
 
     try {
-      const response = await fetch('http://localhost:8000/api/upload', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       })
@@ -62,8 +59,7 @@ export default function AIChatPage() {
       if (response.ok) {
         console.log('File uploaded successfully')
         // Refresh the list of PDFs
-        const updatedPDFs = await fetch('http://localhost:8000/api/pdfs').then(res => res.json())
-        setPdfFiles(updatedPDFs)
+        fetchPDFs()
         setFile(null)
       } else {
         console.error('File upload failed')
@@ -81,7 +77,7 @@ export default function AIChatPage() {
     <div className="container mx-auto p-4 flex flex-col h-[85vh]">
       <Card className="w-full max-w-4xl mx-auto flex-grow flex flex-col">
         <CardHeader>
-          <CardTitle>AI Chat Assistant - PDF Analyzer</CardTitle>
+          <CardTitle>AI Chat Assistant - PDF Library</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow overflow-hidden">
           <ScrollArea className="h-[calc(85vh-12rem)]">
@@ -90,7 +86,7 @@ export default function AIChatPage() {
                 <div key={pdf.id} className="flex items-center justify-between p-2 border rounded">
                   <div className="flex items-center space-x-2">
                     <FileText className="h-6 w-6" />
-                    <span>{pdf.filename}</span>
+                    <span>{pdf.name}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className={pdf.status === 'analyzed' ? 'text-green-500' : 'text-yellow-500'}>
