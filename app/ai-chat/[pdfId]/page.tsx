@@ -3,10 +3,15 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Send } from 'lucide-react'
+import { Document, Page, pdfjs } from 'react-pdf'
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css'
+import 'react-pdf/dist/esm/Page/TextLayer.css'
+
+// // Set up the worker
+// pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 // Define interface for the PDF metadata
 interface PdfMetadata {
@@ -14,97 +19,121 @@ interface PdfMetadata {
   filename: string;
   stored_name: string;
   status: string;
-  processed_data: string;
 }
 
-export default function ExplorePDFPage() {
+export default function PDFViewerPage() {
   const { pdfId } = useParams()
   const [pdfData, setPdfData] = useState<PdfMetadata | null>(null)
-  const [question, setQuestion] = useState('')
-  const [answer, setAnswer] = useState('')
+  const [numPages, setNumPages] = useState<number | null>(null)
+  const [pageNumber, setPageNumber] = useState(1)
+  const [pdfError, setPdfError] = useState<Error | null>(null)
+  const [scale, setScale] = useState(1.0)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchPDFData = async () => {
+      setIsLoading(true)
       try {
         const response = await fetch(`/api/upload?id=${pdfId}`)
         if (response.ok) {
           const data = await response.json()
-          console.log(data[0])
+          console.log('PDF metadata:', data[0])
           setPdfData(data[0])
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`)
         }
       } catch (error) {
         console.error('Error fetching PDF data:', error)
+        setPdfError(error instanceof Error ? error : new Error('Unknown error occurred'))
+      } finally {
+        setIsLoading(false)
       }
     }
 
     fetchPDFData()
   }, [pdfId])
 
-  const handleQuestionSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!question.trim()) return
+  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+    setNumPages(numPages)
+    console.log(`PDF loaded successfully. Total pages: ${numPages}`)
+  }
 
-    try {
-      const response = await fetch('/api/ask', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ pdfId, question }),
-      })
+  function changePage(offset: number) {
+    setPageNumber(prevPageNumber => {
+      const newPageNumber = prevPageNumber + offset
+      return Math.min(Math.max(1, newPageNumber), numPages || 1)
+    })
+  }
 
-      if (response.ok) {
-        const data = await response.json()
-        setAnswer(data.answer)
-      }
-    } catch (error) {
-      console.error('Error asking question:', error)
-    }
+  function zoomIn() {
+    setScale(prevScale => Math.min(prevScale + 0.1, 2.0))
+  }
+
+  function zoomOut() {
+    setScale(prevScale => Math.max(prevScale - 0.1, 0.5))
+  }
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen">Loading PDF data...</div>
+  }
+
+  if (pdfError) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-red-500">
+          <h2>Error loading PDF</h2>
+          <p>{pdfError.message}</p>
+        </div>
+      </div>
+    )
   }
 
   if (!pdfData) {
-    return <div>Loading...</div>
+    return <div className="flex justify-center items-center h-screen">No PDF data available.</div>
   }
 
   return (
-    <div className="container mx-auto p-4 flex flex-col h-[85vh]">
-      <Card className="w-full max-w-4xl mx-auto flex-grow flex flex-col">
+    <div className="container mx-auto p-4 flex flex-col min-h-screen">
+      <Card className="w-full max-w-6xl mx-auto flex-grow flex flex-col">
         <CardHeader>
-          <CardTitle>Explore PDF: {pdfData.filename}</CardTitle>
+          <CardTitle>PDF Viewer: {pdfData.filename}</CardTitle>
         </CardHeader>
-        <CardContent className="flex-grow overflow-hidden">
-          <ScrollArea className="h-[calc(85vh-20rem)]">
-            <div className="space-y-4 pb-4">
-              <h3 className="text-lg font-semibold">Ask AI</h3>
-              <form onSubmit={handleQuestionSubmit} className="flex space-x-2">
-                <Input
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  placeholder="Ask a question about the document..."
-                  className="flex-grow"
-                />
-                <Button type="submit">
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
-              {answer && (
-                <div className="mt-4">
-                  <h4 className="font-semibold">Answer:</h4>
-                  <p>{answer}</p>
-                </div>
-              )}
-              <h3 className="text-lg font-semibold mt-8">Document Content</h3>
-              {/* I want to add a view of the PDF here */}
-              <p className="whitespace-pre-wrap">{pdfData.processed_data}</p>
+        <CardContent className="flex-grow overflow-hidden flex flex-col items-center">
+          <div className="mb-4 space-x-2">
+            <Button onClick={() => changePage(-1)} disabled={pageNumber <= 1}>
+              Previous
+            </Button>
+            <span className="mx-2">
+              Page {pageNumber} of {numPages || '?'}
+            </span>
+            <Button onClick={() => changePage(1)} disabled={pageNumber >= (numPages || 1)}>
+              Next
+            </Button>
+            <Button onClick={zoomIn}>Zoom In</Button>
+            <Button onClick={zoomOut}>Zoom Out</Button>
+          </div>
+          <ScrollArea className="h-[calc(100vh-12rem)] w-full">
+            <div className="flex justify-center">
+              <Document
+                file={`/api/pdf/${pdfId}`}
+                onLoadSuccess={onDocumentLoadSuccess}
+                onLoadError={(error: Error) => {
+                  console.error('Error loading PDF:', error)
+                  setPdfError(error)
+                }}
+                loading={<div>Loading PDF...</div>}
+              >
+                {pdfError ? (
+                  <p className="text-red-500">Error loading PDF: {pdfError.message}</p>
+                ) : (
+                  <Page pageNumber={pageNumber} scale={scale} />
+                )}
+              </Document>
             </div>
           </ScrollArea>
         </CardContent>
-        <CardFooter>
-          <Button onClick={() => window.open(`/api/pdfs/${pdfId}/view`, '_blank')}>
-            View Original PDF
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   )
 }
+
